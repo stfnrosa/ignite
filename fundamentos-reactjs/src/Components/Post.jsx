@@ -1,42 +1,110 @@
+import { useState } from 'react';
+import { Avatar } from './Avatar';
 import { Comment } from './Coment';
 import styles from './Post.module.css'
+import {format, formatDistanceToNow} from 'date-fns'
+import ptBR from 'date-fns/locale/pt-BR'
 
-export function Post (){
+export function Post ({author, publishedAt, content }){
+    const [comments, setComments] = useState([
+        'orra',
+    ])
+
+    const [newCommentText, setNewCommentText] = useState('')
+
+    const publishedDateFormatted = format(publishedAt, "d 'de' LLLL 'às' HH:mm'h'", {
+        locale: ptBR,
+    })
+    
+    const publishedDateRelativeToNow = formatDistanceToNow(publishedAt, {
+        locale: ptBR,
+        addSuffix: true,
+    })
+
+    function handleCreateNewComment(){
+        event.preventDefault()
+        setComments([...comments, newCommentText]);
+        setNewCommentText('')
+    }
+
+    function hanfleNewCommentChange(){
+        event.target.setCustomValidity('');
+        setNewCommentText(event.target.value);
+    }
+
+    function handleNewCommentInvalid() {
+        event.target.setCustomValidity('Esse campo é obrigatório!');
+      }
+    
+
+    function deleteCommnet(commentToDelete){
+        const commentsWithoutDeleteOne = comments.filter(comment => {
+            return comment != commentToDelete;
+        })
+        setComments(commentsWithoutDeleteOne);
+    }
+
+    const isNewCommentEmpty = newCommentText.length === 0;
+
     return (
         <article className={styles.post}>
             <header>
                 <div className={styles.author}>
-                    <img 
-                        className={styles.avatar}
-                        src="https://i.pinimg.com/564x/79/e2/c9/79e2c9402014ead1eebf6c9f184c5bf8.jpg"
+                    <Avatar src={author.avatarUrl}
                     />
                     <div className={styles.authorInfo}>
-                        <strong>Roronoa Zoro</strong>
-                        <span>Caçador de Piratas</span>
+                        <strong>{author.name}</strong>
+                        <span>{author.role}</span>
                     </div>
                 </div>
-                <time title="29 de Agosto às 14h" dateTime='2024-08-29 14:00:00'>Publicado há 1h</time>
+                <time title={publishedDateFormatted} dateTime={publishedAt.toISOString}>
+                    {publishedDateRelativeToNow}
+                </time>
             </header>
             <div className={styles.content}>
-                <p>Navegando por aí, sem bússola e com um barril de rum, mas quem precisa de direção quando você tem 3 espadas? 🗡️🗡️🗡️ </p>
-                <p>Vou me tornar o melhor espadachim do mundo, nem que eu tenha que lutar contra todos os piratas desse oceano!</p> 
-                <p>... agora só preciso achar o navio. 🤔</p>
-                <p>
-                    <a>#EspadachimPerdido</a>{' '}
-                    <a>#TrêsEspadas</a>{' '}
-                    <a>#MelhorDoMundo</a>{' '}
-                </p>
+                {content.map(line => {
+                    if (line.type === 'paragraph'){
+                        return(
+                            <p key={line.content}>{line.content}</p>
+                        )
+                    }else if (line.type === 'link'){
+                        return(
+                            <p key={line.content}><a href="#">{line.content}</a></p> 
+                        ) 
+                    }            
+
+                })}
             </div>
-            <form className={styles.commentForm}>
+            <form onSubmit={handleCreateNewComment} className={styles.commentForm}>
                 <strong>Deixe seu feedback</strong>
-                <textarea placeholder='Deixe um comentário'/>
+
+                <textarea 
+                    onChange={hanfleNewCommentChange}
+                    value={newCommentText}
+                    name='comment' 
+                    placeholder='Deixe um comentário'
+                    onInvalid={handleNewCommentInvalid}
+                    required
+
+                />
+
                 <footer>
-                    <button type='submit'>Publicar</button>
+                    <button type="submit" disabled={isNewCommentEmpty}>
+                        Publicar
+                    </button>
                 </footer>
             </form>
 
             <div className={styles.commentList}>
-                <Comment/>
+                {comments.map(comment => {
+                    return(
+                        <Comment 
+                            key={comment} 
+                            content={comment} onDeleteCommnet={deleteCommnet}
+                        />
+                    )
+                }
+                )}
             </div>
         </article>
     );
